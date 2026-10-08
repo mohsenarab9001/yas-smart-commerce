@@ -3,9 +3,31 @@ import { getRequestLocale } from "../lib/i18n/request";
 import { listProducts } from "../lib/products/service";
 import AddToCartButton from "../components/cart/AddToCartButton";
 
-export default async function ShopPage() {
+type ShopSort = "newest" | "price-asc" | "price-desc";
+
+type ShopSearchParams = {
+  sort?: string;
+};
+
+export default async function ShopPage({
+  searchParams,
+}: {
+  searchParams: Promise<ShopSearchParams>;
+}) {
   const locale = await getRequestLocale();
-  const products = listProducts({ status: "active", locale });
+  const params = await searchParams;
+  const sort: ShopSort | undefined =
+    params.sort === "newest" ||
+    params.sort === "price-asc" ||
+    params.sort === "price-desc"
+      ? params.sort
+      : undefined;
+
+  const products = listProducts({
+    status: "active",
+    locale,
+    sort,
+  });
   const isFa = locale === "fa";
 
   return (
@@ -18,21 +40,60 @@ export default async function ShopPage() {
           href="/"
           className="text-sm font-semibold text-white/45 transition hover:text-white"
         >
-          {isFa ? "â† Ø¨Ø§Ø²Ú¯Ø´Øª Ø¨Ù‡ ØµÙØ­Ù‡ Ø§ØµÙ„ÛŒ" : "â† Back to home"}
+          {isFa ? "← بازگشت به صفحه اصلی" : "← Back to home"}
         </Link>
 
         <div className="mb-10 mt-8">
           <p className="text-sm font-semibold text-violet-400">YAS</p>
 
           <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
-            {isFa ? "ÙØ±ÙˆØ´Ú¯Ø§Ù‡" : "Shop"}
+            {isFa ? "فروشگاه" : "Shop"}
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45 sm:text-base">
             {isFa
-              ? "Ù…Ø­ØµÙˆÙ„Ø§Øª Ø±Ø§ Ø¨Ø±Ø±Ø³ÛŒ Ú©Ù†ÛŒØ¯ Ùˆ Ù…Ø­ØµÙˆÙ„ Ù…ÙˆØ±Ø¯Ù†Ø¸Ø± Ø®ÙˆØ¯ Ø±Ø§ Ø§Ù†ØªØ®Ø§Ø¨ Ú©Ù†ÛŒØ¯."
+              ? "محصولات را بررسی کنید و محصول موردنظر خود را انتخاب کنید."
               : "Explore our products and choose what fits you best."}
           </p>
+
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs font-semibold text-white/35">
+              {isFa ? "مرتب‌سازی:" : "Sort:"}
+            </span>
+
+            <Link
+              href="/shop?sort=newest"
+              className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                sort === "newest"
+                  ? "border-violet-400/40 bg-violet-500/15 text-violet-200"
+                  : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/20 hover:text-white"
+              }`}
+            >
+              {isFa ? "جدیدترین" : "Newest"}
+            </Link>
+
+            <Link
+              href="/shop?sort=price-asc"
+              className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                sort === "price-asc"
+                  ? "border-violet-400/40 bg-violet-500/15 text-violet-200"
+                  : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/20 hover:text-white"
+              }`}
+            >
+              {isFa ? "ارزان‌ترین" : "Price: Low to High"}
+            </Link>
+
+            <Link
+              href="/shop?sort=price-desc"
+              className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                sort === "price-desc"
+                  ? "border-violet-400/40 bg-violet-500/15 text-violet-200"
+                  : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/20 hover:text-white"
+              }`}
+            >
+              {isFa ? "گران‌ترین" : "Price: High to Low"}
+            </Link>
+          </div>
         </div>
 
         {products.length === 0 ? (
