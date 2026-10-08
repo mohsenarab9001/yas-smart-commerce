@@ -71,6 +71,67 @@ const productPriceMap = new Map(
   ]),
 );
 
+function getEffectiveProductPrice(
+  product: ProductAggregate,
+): number | undefined {
+  const activeSkuIds = new Set(
+    product.skus
+      .filter((sku) => sku.status === "active")
+      .map((sku) => sku.id),
+  );
+
+  const activePrices = product.prices.filter(
+    (price) =>
+      price.status === "active" &&
+      activeSkuIds.has(price.skuId),
+  );
+
+  if (activePrices.length === 0) {
+    return undefined;
+  }
+
+  return Math.min(
+    ...activePrices.map((price) => price.price),
+  );
+}
+
+function sortProducts(
+  products: ProductAggregate[],
+  sort?: ProductListOptions["sort"],
+): ProductAggregate[] {
+  if (!sort) {
+    return products;
+  }
+
+  return [...products].sort((a, b) => {
+    if (sort === "newest") {
+      return (
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime()
+      );
+    }
+
+    const aPrice = getEffectiveProductPrice(a);
+    const bPrice = getEffectiveProductPrice(b);
+
+    if (aPrice === undefined && bPrice === undefined) {
+      return 0;
+    }
+
+    if (aPrice === undefined) {
+      return 1;
+    }
+
+    if (bPrice === undefined) {
+      return -1;
+    }
+
+    return sort === "price-asc"
+      ? aPrice - bPrice
+      : bPrice - aPrice;
+  });
+}
+
 function buildProductAggregate(
   productId: string,
 ): ProductAggregate | undefined {
@@ -125,7 +186,7 @@ export const localProductRepository: ProductRepository = {
   },
 
   list(options?: ProductListOptions) {
-    return products
+    const result = products
       .filter((product) => {
         if (
           options?.categoryId &&
@@ -155,5 +216,7 @@ export const localProductRepository: ProductRepository = {
         (product): product is ProductAggregate =>
           product !== undefined,
       );
+
+    return sortProducts(result, options?.sort);
   },
 };
